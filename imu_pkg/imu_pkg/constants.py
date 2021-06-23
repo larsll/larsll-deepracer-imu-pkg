@@ -1,0 +1,1 @@
+IMU_MSG_TOPIC = "imu_msg"
