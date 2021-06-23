@@ -55,6 +55,23 @@ class IMUNode(Node):
                                                             1,
                                                             callback_group=self.imu_message_pub_cb_grp)
 
+        self.get_logger().info('Trying to initialize the sensor...')
+        sensor = Driver(0x68, 1) # change address if needed
+        self.get_logger().info('Initialization done')
+
+        sensor.setFullScaleAccelRange(definitions.ACCEL_RANGE_4G, 4.0)
+        sensor.setFullScaleGyroRange(definitions.GYRO_RANGE_250, 250.0)
+
+        sensor.autoCalibrateXAccelOffset(0)
+        sensor.autoCalibrateYAccelOffset(0)
+        sensor.autoCalibrateZAccelOffset(-1)
+
+        sensor.setAccelOffsetEnabled(True)
+
+        data = sensor.getMotion6()
+        # fetch all gyro and acclerometer values
+        self.get_logger().info('gz: {:+.0f}'.format(data[2] / 0x8000 * 250))
+
     def timer_callback(self):
         """Heartbeat function to keep the node alive.
         """
