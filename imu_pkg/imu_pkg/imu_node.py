@@ -48,8 +48,7 @@ class IMUNode(Node):
         self.get_logger().info("imu_node started.")
         self.stop_queue = threading.Event()
 
-        # Publisher that sends combined sensor messages with camera data and LiDAR data
-        # to inference node.
+        # Publisher that sends combined sensor messages with IMU acceleration and gyroscope data.
         self.imu_message_pub_cb_grp = ReentrantCallbackGroup()
         self.imu_message_publisher = self.create_publisher(IMUSensorMsg,
                                                             constants.IMU_MSG_TOPIC,
@@ -77,8 +76,8 @@ class IMUNode(Node):
         try:
 
             self.get_logger().info('Trying to initialize the sensor...')
-            self.sensor = Driver(constants.BMI160_ADDR, constants.I2C_BUS_ID) # change address if needed
-            self.get_logger().info('Initialization done')
+            # self.sensor = Driver(constants.BMI160_ADDR, constants.I2C_BUS_ID) # Depends on changes to library
+            self.sensor = Driver(constants.BMI160_ADDR) # Doest not take constants.I2C_BUS_ID into account
 
             # Defining the Range for Accelerometer and Gyroscope
             self.sensor.setFullScaleAccelRange(definitions.ACCEL_RANGE_4G, constants.ACCEL_RANGE_4G_FLOAT)
@@ -95,6 +94,8 @@ class IMUNode(Node):
         except Exception as ex:
             self.get_logger().info(f"Failed to create IMU monitor: {ex}")
             self.observer = None
+
+        self.get_logger().info('Initialization and calibration of IMU sensor done.')
 
         self.thread = threading.Thread(target=self.processor)
         self.thread.start()
@@ -117,7 +118,7 @@ class IMUNode(Node):
                     self.publish_imu_message()
                     rate.sleep()
             except Exception as ex:
-                self.get_logger().info(f"Failed to create IMU message: {ex}")      
+                self.get_logger().error(f"Failed to create IMU message: {ex}")      
 
     def publish_imu_message(self):
         """Publish the sensor message when we get new data for the slowest sensor(LiDAR).
