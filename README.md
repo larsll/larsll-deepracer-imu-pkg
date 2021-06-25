@@ -112,5 +112,5 @@ The `imu_pkg_launch.py`, included in this package, provides an example demonstra
 
 | Topic name | Message type | Description |
 | ---------- | ------------ | ----------- |
-|/`imu_pkg`/`imu_msg`/`raw`|IMUSensorMsg|Publisher that publishes the readings from the IMU in 6 dimensions.|
+|/`imu_pkg`/`imu_msg`/`raw`|Imu|Publisher that publishes the readings from the IMU in 6 dimensions.|
 
