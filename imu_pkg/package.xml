@@ -10,7 +10,9 @@
   <license>Apache 2.0</license>
 
   <depend>rclpy</depend>
-  <depend>deepracer_interfaces_pkg</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
   <depend>BMI160-i2c</depend>
   <depend>smbus2</depend>
 

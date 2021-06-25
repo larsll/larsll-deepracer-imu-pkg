@@ -22,6 +22,7 @@ imu_node.py
 """
 
 import os
+import math
 import threading
 import json
 import numpy as np
@@ -33,7 +34,9 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from BMI160_i2c import Driver
 from BMI160_i2c import definitions
 
-from deepracer_interfaces_pkg.msg import (IMUSensorMsg)
+from sensor_msgs.msg import Imu
+from std_msgs.msg import Header
+from geometry_msgs.msg import (Quaternion, Vector3)
 from imu_pkg import (constants)
 
 class IMUNode(Node):
@@ -50,7 +53,7 @@ class IMUNode(Node):
 
         # Publisher that sends combined sensor messages with IMU acceleration and gyroscope data.
         self.imu_message_pub_cb_grp = ReentrantCallbackGroup()
-        self.imu_message_publisher = self.create_publisher(IMUSensorMsg,
+        self.imu_message_publisher = self.create_publisher(Imu,
                                                             constants.IMU_MSG_TOPIC,
                                                             1,
                                                             callback_group=self.imu_message_pub_cb_grp)
@@ -124,21 +127,35 @@ class IMUNode(Node):
         """Publish the sensor message when we get new data for the slowest sensor(LiDAR).
         """
         try:
-            sensor_msg = IMUSensorMsg()
+            imu_msg = Imu()
             data = self.sensor.getMotion6()
-            
-            # fetch all gyro and acclerometer values
-            sensor_msg.g_x = data[0] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.GYRO_RANGE_250_FLOAT
-            sensor_msg.g_y = data[1] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.GYRO_RANGE_250_FLOAT
-            sensor_msg.g_z = data[2] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.GYRO_RANGE_250_FLOAT
-            
-            sensor_msg.a_x = data[3] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.ACCEL_RANGE_4G_FLOAT
-            sensor_msg.a_y = data[4] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.ACCEL_RANGE_4G_FLOAT
-            sensor_msg.a_z = data[5] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.ACCEL_RANGE_4G_FLOAT
-            
-            self.get_logger().debug('gz: {:+.0f}'.format(sensor_msg.g_x))
 
-            self.imu_message_publisher.publish(sensor_msg)
+            # fetch all gyro values - return in rad / sec
+            gyro = Vector3()
+            gyro.x = (data[0] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.GYRO_RANGE_250_FLOAT) * (math.pi / 180)
+            gyro.y = data[1] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.GYRO_RANGE_250_FLOAT * (math.pi / 180)
+            gyro.z = data[2] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.GYRO_RANGE_250_FLOAT * (math.pi / 180)
+            
+            # fetch all accel values - return in m/s²
+            accel = Vector3()
+            accel.x = data[3] * constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT * constants.ACCEL_RANGE_4G_FLOAT
+            accel.y = data[4] * constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT * constants.ACCEL_RANGE_4G_FLOAT
+            accel.z = data[5] * constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT * constants.ACCEL_RANGE_4G_FLOAT
+            
+            imu_msg.angular_velocity = gyro
+            imu_msg.angular_velocity_covariance = constants.EMPTY_ARRAY_9
+            imu_msg.linear_acceleration = accel
+            imu_msg.linear_acceleration_covariance = constants.EMPTY_ARRAY_9
+            
+            imu_msg.orientation_covariance = constants.EMPTY_ARRAY_9
+            imu_msg.orientation_covariance[0] = -1.0
+            
+            # add header
+            imu_msg.header.stamp = self.get_clock().now().to_msg()
+
+            self.get_logger().debug('gz: {:+.0f}'.format(gyro.z))
+
+            self.imu_message_publisher.publish(imu_msg)
 
         except Exception as ex:
             self.get_logger().error(f"Error in publishing sensor message: {ex}")
