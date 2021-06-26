@@ -17,7 +17,7 @@ Follow these steps to install the AWS DeepRacer sensor fusion package.
 
 The `imu_pkg` specifically depends on the following ROS 2 packages as build and run dependencies:
 
-1. `deepracer_interfaces_pkg`: This package contains the custom message and service type definitions used across the AWS DeepRacer core application.
+1. `geometry_msgs`: This package contains the messages for geometric messages.
 1. `sensor_msgs`: This package defines messages for commonly used sensors, including cameras and scanning laser rangefinders.
 
 Additionally the following Python Packages are needed:
@@ -59,9 +59,9 @@ Open a terminal on the AWS DeepRacer device and run the following commands as th
 
         cd ~/deepracer_ws/aws-deepracer-imu-pkg && rosdep install -i --from-path . --rosdistro foxy -y
 
-1. Build the `imu_pkg` and `deepracer_interfaces_pkg`:
+1. Build the `imu_pkg`:
 
-        cd ~/deepracer_ws/aws-deepracer-imu-pkg && colcon build --packages-select imu_pkg deepracer_interfaces_pkg
+        cd ~/deepracer_ws/aws-deepracer-imu-pkg && colcon build --packages-select imu_pkg
 
 ## Usage
 
