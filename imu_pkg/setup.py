@@ -29,7 +29,7 @@ setup(
         ("share/" + package_name, ["package.xml"]),
         (os.path.join("share", package_name), ["launch/imu_pkg_launch.py"])
     ],
-    install_requires=["setuptools"],
+    install_requires=["setuptools","BMI160-i2c","smbus2"],
     zip_safe=True,
     maintainer="Lars Ludvigsen",
     maintainer_email="lars@ludvig.no",
