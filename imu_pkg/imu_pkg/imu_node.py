@@ -109,20 +109,23 @@ class IMUNode(Node):
     def __exit__(self, ExcType, ExcValue, Traceback):
         """Called when the object is destroyed.
         """
+        self.get_logger().info('Exiting.')
         self.stop_queue.set()
+        self.rate.destroy()
         self.thread.join()
+        
 
     def processor(self):
-        rate = self.create_rate(constants.IMU_MSG_RATE)
+        self.rate = self.create_rate(constants.IMU_MSG_RATE)
 
-        while not self.stop_queue.isSet():
+        while not self.stop_queue.is_set():
             try:
                 while rclpy.ok():
                     self.publish_imu_message()
-                    rate.sleep()
+                    self.rate.sleep()
             except Exception as ex:
                 self.get_logger().error(f"Failed to create IMU message: {ex}")      
-
+        
     def publish_imu_message(self):
         """Publish the sensor message when we get new data for the slowest sensor(LiDAR).
         """
