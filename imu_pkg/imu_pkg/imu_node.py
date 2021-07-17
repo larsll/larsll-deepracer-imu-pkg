@@ -115,6 +115,8 @@ class IMUNode(Node):
         
 
     def processor(self):
+
+        self.get_logger().info(f"Publishing messages at {constants.IMU_MSG_RATE} Hz.")
         self.rate = self.create_rate(constants.IMU_MSG_RATE)
 
         while not self.stop_queue.is_set():
