@@ -21,11 +21,9 @@ imu_node.py
 
 """
 
-import os
 import math
 import threading
-import json
-import numpy as np
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
@@ -97,6 +95,7 @@ class IMUNode(Node):
         except Exception as ex:
             self.get_logger().info(f"Failed to create IMU monitor: {ex}")
             self.observer = None
+            raise ex
 
         self.get_logger().info('Initialization and calibration of IMU sensor done.')
 
