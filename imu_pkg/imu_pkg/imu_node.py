@@ -76,9 +76,8 @@ class IMUNode(Node):
         """
         try:
 
-            self.get_logger().info('Trying to initialize the sensor...')
-            # self.sensor = Driver(constants.BMI160_ADDR, constants.I2C_BUS_ID) # Depends on changes to library
-            self.sensor = Driver(constants.BMI160_ADDR) # Doest not take constants.I2C_BUS_ID into account
+            # self.get_logger().info(f"Trying to initialize the sensor at {constants.BMI160_ADDR} on bus {constants.I2C_BUS_ID}")
+            self.sensor = Driver(constants.BMI160_ADDR, constants.I2C_BUS_ID) # Depends on changes to library
 
             # Defining the Range for Accelerometer and Gyroscope
             self.sensor.setFullScaleAccelRange(definitions.ACCEL_RANGE_4G, constants.ACCEL_RANGE_4G_FLOAT)
@@ -119,11 +118,10 @@ class IMUNode(Node):
         self.get_logger().info(f"Publishing messages at {constants.IMU_MSG_RATE} Hz.")
         self.rate = self.create_rate(constants.IMU_MSG_RATE)
 
-        while not self.stop_queue.is_set():
+        while not self.stop_queue.is_set() and rclpy.ok():
             try:
-                while rclpy.ok():
-                    self.publish_imu_message()
-                    self.rate.sleep()
+                self.publish_imu_message()
+                self.rate.sleep()
             except Exception as ex:
                 self.get_logger().error(f"Failed to create IMU message: {ex}")      
         
