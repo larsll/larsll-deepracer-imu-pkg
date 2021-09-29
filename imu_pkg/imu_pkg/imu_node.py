@@ -164,14 +164,18 @@ class IMUNode(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
-    with IMUNode() as imu_node:
-        executor = MultiThreadedExecutor()
-        rclpy.spin(imu_node, executor)
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    imu_node.destroy_node()
+    
+    try:
+        rclpy.init(args=args)
+        with IMUNode() as imu_node:
+            executor = MultiThreadedExecutor()
+            rclpy.spin(imu_node, executor)
+        # Destroy the node explicitly
+        # (optional - otherwise it will be done automatically
+        # when the garbage collector destroys the node object)
+        imu_node.destroy_node()
+    except KeyboardInterrupt:
+        pass    
     rclpy.shutdown()
 
 
