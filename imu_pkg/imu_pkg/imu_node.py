@@ -37,6 +37,9 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import (Quaternion, Vector3)
 from imu_pkg import (constants)
 
+from rcl_interfaces.msg import ParameterDescriptor, ParameterType
+
+
 class IMUNode(Node):
     """Node responsible for collecting the camera and LiDAR messages and publishing them
        at the rate of the camera sensor.
@@ -46,8 +49,17 @@ class IMUNode(Node):
         """Create a IMUNode.
         """
         super().__init__("imu_node")
-        self.get_logger().info("imu_node started.")
+        self.get_logger().info("IMU node initializing.")
         self.stop_queue = threading.Event()
+
+
+        self.declare_parameter('bus_id', constants.I2C_BUS_ID, ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER))
+        self.declare_parameter('address', constants.BMI160_ADDR, ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER))
+
+        self._bus_id = self.get_parameter('bus_id').value
+        self._address = self.get_parameter('address').value
+
+        self.get_logger().info("Connecting to IMU at bus {} address {}".format(self._bus_id, self._address))
 
         # Publisher that sends combined sensor messages with IMU acceleration and gyroscope data.
         self.imu_message_pub_cb_grp = ReentrantCallbackGroup()
@@ -60,7 +72,7 @@ class IMUNode(Node):
         self.timer_count = 0
         self.timer = self.create_timer(5.0, self.timer_callback)
 
-        self.get_logger().info("IMU node successfully created")
+        self.get_logger().info("IMU node created.")
 
 
     def timer_callback(self):
@@ -77,7 +89,7 @@ class IMUNode(Node):
         try:
 
             # self.get_logger().info(f"Trying to initialize the sensor at {constants.BMI160_ADDR} on bus {constants.I2C_BUS_ID}")
-            self.sensor = Driver(constants.BMI160_ADDR, constants.I2C_BUS_ID) # Depends on changes to library
+            self.sensor = Driver(self._address, self._bus_id) # Depends on changes to library
 
             # Defining the Range for Accelerometer and Gyroscope
             self.sensor.setFullScaleAccelRange(definitions.ACCEL_RANGE_4G, constants.ACCEL_RANGE_4G_FLOAT)
