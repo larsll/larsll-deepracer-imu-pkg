@@ -148,25 +148,25 @@ class IMUNode(Node):
             gyro = Vector3()
             # swap x and y
             gyro.x = ((data[1] / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180) * -1)
+                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180))
             # swap x and y
             gyro.y = ((data[0] / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180) * -1)
+                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180))
             # upside-down
             gyro.z = ((data[2] / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180) * -1)
+                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180) * -1.0)
 
             # fetch all accel values - return in m/s²
             accel = Vector3()
             # swap x and y
             accel.x = (data[4] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                       constants.ACCEL_RANGE_4G_FLOAT * -1)
+                       constants.ACCEL_RANGE_4G_FLOAT)
             # swap x and y
             accel.y = (data[3] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                       constants.ACCEL_RANGE_4G_FLOAT * -1)
+                       constants.ACCEL_RANGE_4G_FLOAT)
             # upside-down
             accel.z = (data[5] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                       constants.ACCEL_RANGE_4G_FLOAT * -1)
+                       constants.ACCEL_RANGE_4G_FLOAT * -1.0)
 
             imu_msg.angular_velocity = gyro
             imu_msg.angular_velocity_covariance = constants.COVAR_ARRAY_9
