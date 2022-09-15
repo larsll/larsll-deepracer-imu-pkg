@@ -56,9 +56,12 @@ class IMUNode(Node):
                                ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER))
         self.declare_parameter('address', constants.BMI160_ADDR,
                                ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER))
+        self.declare_parameter('publish_rate', constants.IMU_MSG_RATE,
+                               ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER))
 
         self._bus_id = self.get_parameter('bus_id').value
         self._address = self.get_parameter('address').value
+        self._publish_rate = self.get_parameter('publish_rate').value
 
         self.get_logger().info("Connecting to IMU at bus {} address {}".format(self._bus_id, self._address))
 
@@ -127,8 +130,8 @@ class IMUNode(Node):
 
     def processor(self):
 
-        self.get_logger().info(f"Publishing messages at {constants.IMU_MSG_RATE} Hz.")
-        self.rate = self.create_rate(constants.IMU_MSG_RATE)
+        self.get_logger().info(f"Publishing messages at {self._publish_rate} Hz.")
+        self.rate = self.create_rate(self._publish_rate)
 
         while not self.stop_queue.is_set() and rclpy.ok():
             try:
