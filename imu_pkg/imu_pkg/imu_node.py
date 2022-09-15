@@ -33,8 +33,9 @@ from BMI160_i2c import Driver
 from BMI160_i2c import definitions
 
 from sensor_msgs.msg import Imu
+from nav_msgs.msg import Odometry
 from std_msgs.msg import Header
-from geometry_msgs.msg import (Quaternion, Vector3)
+from geometry_msgs.msg import Vector3, Pose
 from imu_pkg import (constants)
 
 from rcl_interfaces.msg import ParameterDescriptor, ParameterType
@@ -58,10 +59,13 @@ class IMUNode(Node):
                                ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER))
         self.declare_parameter('publish_rate', constants.IMU_MSG_RATE,
                                ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER))
+        self.declare_parameter('zero_motion_odometer', False,
+                               ParameterDescriptor(type=ParameterType.PARAMETER_BOOL))
 
         self._bus_id = self.get_parameter('bus_id').value
         self._address = self.get_parameter('address').value
         self._publish_rate = self.get_parameter('publish_rate').value
+        self._zero_motion = self.get_parameter('zero_motion_odometer').value
 
         self.get_logger().info("Connecting to IMU at bus {} address {}".format(self._bus_id, self._address))
 
@@ -71,6 +75,13 @@ class IMUNode(Node):
                                                            constants.IMU_MSG_TOPIC,
                                                            1,
                                                            callback_group=self.imu_message_pub_cb_grp)
+
+        if self._zero_motion:
+            self.odom_message_pub_cb_grp = ReentrantCallbackGroup()
+            self.odom_message_publisher = self.create_publisher(Odometry,
+                                                                constants.ODOM_MSG_TOPIC,
+                                                                1,
+                                                                callback_group=self.odom_message_pub_cb_grp)
 
         # Heartbeat timer.
         self.timer_count = 0
@@ -107,6 +118,12 @@ class IMUNode(Node):
             self.sensor.autoCalibrateYAccelOffset(0)
             self.sensor.autoCalibrateZAccelOffset(-1)
 
+            # Enable standing still check
+            if self._zero_motion:
+                self.sensor.setZeroMotionDetectionDuration(1)
+                self.sensor.setZeroMotionDetectionThreshold(0x04)
+                self.sensor.setIntZeroMotionEnabled(True)
+
         except Exception as ex:
             self.get_logger().info(f"Failed to create IMU monitor: {ex}")
             self.observer = None
@@ -131,6 +148,10 @@ class IMUNode(Node):
     def processor(self):
 
         self.get_logger().info(f"Publishing messages at {self._publish_rate} Hz.")
+
+        if self._zero_motion:
+            self.get_logger().info(f"Publishing zero-motion odometry.")
+
         self.rate = self.create_rate(self._publish_rate)
 
         while not self.stop_queue.is_set() and rclpy.ok():
@@ -146,6 +167,22 @@ class IMUNode(Node):
         try:
             imu_msg = Imu()
             data = self.sensor.getMotion6()
+
+            if self._zero_motion:
+                nomotion = self.sensor.getIntZeroMotionStatus()
+
+                if nomotion:
+                    odom_msg = Odometry()
+                    odom_msg.header.stamp = self.get_clock().now().to_msg()
+                    odom_msg.header.frame_id = 'odom'
+                    odom_msg.child_frame_id = 'base_link'
+                    odom_msg.pose.pose = Pose()
+                    odom_msg.pose.covariance = constants.EMPTY_ARRAY_36
+                    odom_msg.pose.covariance[0] = -1.0
+                    odom_msg.twist.twist.linear = Vector3()
+                    odom_msg.twist.covariance = constants.EMPTY_ARRAY_36
+
+                    self.odom_message_publisher.publish(odom_msg)
 
             # fetch all gyro values - return in rad / sec
             gyro = Vector3()
