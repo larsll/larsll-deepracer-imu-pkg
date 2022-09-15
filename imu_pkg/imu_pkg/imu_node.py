@@ -52,9 +52,10 @@ class IMUNode(Node):
         self.get_logger().info("IMU node initializing.")
         self.stop_queue = threading.Event()
 
-
-        self.declare_parameter('bus_id', constants.I2C_BUS_ID, ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER))
-        self.declare_parameter('address', constants.BMI160_ADDR, ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER))
+        self.declare_parameter('bus_id', constants.I2C_BUS_ID,
+                               ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER))
+        self.declare_parameter('address', constants.BMI160_ADDR,
+                               ParameterDescriptor(type=ParameterType.PARAMETER_INTEGER))
 
         self._bus_id = self.get_parameter('bus_id').value
         self._address = self.get_parameter('address').value
@@ -64,16 +65,15 @@ class IMUNode(Node):
         # Publisher that sends combined sensor messages with IMU acceleration and gyroscope data.
         self.imu_message_pub_cb_grp = ReentrantCallbackGroup()
         self.imu_message_publisher = self.create_publisher(Imu,
-                                                            constants.IMU_MSG_TOPIC,
-                                                            1,
-                                                            callback_group=self.imu_message_pub_cb_grp)
+                                                           constants.IMU_MSG_TOPIC,
+                                                           1,
+                                                           callback_group=self.imu_message_pub_cb_grp)
 
         # Heartbeat timer.
         self.timer_count = 0
         self.timer = self.create_timer(5.0, self.timer_callback)
 
         self.get_logger().info("IMU node created.")
-
 
     def timer_callback(self):
         """Heartbeat function to keep the node alive.
@@ -88,8 +88,9 @@ class IMUNode(Node):
         """
         try:
 
-            # self.get_logger().info(f"Trying to initialize the sensor at {constants.BMI160_ADDR} on bus {constants.I2C_BUS_ID}")
-            self.sensor = Driver(self._address, self._bus_id) # Depends on changes to library
+            # self.get_logger().info(f"Trying to initialize the sensor at {constants.BMI160_ADDR}
+            # on bus {constants.I2C_BUS_ID}")
+            self.sensor = Driver(self._address, self._bus_id)  # Depends on changes to library
 
             # Defining the Range for Accelerometer and Gyroscope
             self.sensor.setFullScaleAccelRange(definitions.ACCEL_RANGE_4G, constants.ACCEL_RANGE_4G_FLOAT)
@@ -97,11 +98,11 @@ class IMUNode(Node):
 
             # Calibrating Accelerometer - assuming that it stands on 'flat ground'.
             # Gravity points downwards, hence Z should be calibrated to -1.
+            self.sensor.setAccelOffsetEnabled(True)
+
             self.sensor.autoCalibrateXAccelOffset(0)
             self.sensor.autoCalibrateYAccelOffset(0)
             self.sensor.autoCalibrateZAccelOffset(-1)
-
-            self.sensor.setAccelOffsetEnabled(True)
 
         except Exception as ex:
             self.get_logger().info(f"Failed to create IMU monitor: {ex}")
@@ -123,7 +124,6 @@ class IMUNode(Node):
         self.stop_queue.set()
         self.rate.destroy()
         self.thread.join()
-        
 
     def processor(self):
 
@@ -135,8 +135,8 @@ class IMUNode(Node):
                 self.publish_imu_message()
                 self.rate.sleep()
             except Exception as ex:
-                self.get_logger().error(f"Failed to create IMU message: {ex}")      
-        
+                self.get_logger().error(f"Failed to create IMU message: {ex}")
+
     def publish_imu_message(self):
         """Publish the sensor message when we get new data for the slowest sensor(LiDAR).
         """
@@ -146,26 +146,40 @@ class IMUNode(Node):
 
             # fetch all gyro values - return in rad / sec
             gyro = Vector3()
-            gyro.x = data[1] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.GYRO_RANGE_250_FLOAT * (math.pi / 180) # swap x and y
-            gyro.y = data[0] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.GYRO_RANGE_250_FLOAT * (math.pi / 180) # swap x and y
-            gyro.z = data[2] / constants.CONVERSION_MASK_16BIT_FLOAT * constants.GYRO_RANGE_250_FLOAT * (math.pi / 180) * -1 # upside-down
-            
+            # swap x and y
+            gyro.x = ((data[1] / constants.CONVERSION_MASK_16BIT_FLOAT) *
+                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180) * -1)
+            # swap x and y
+            gyro.y = ((data[0] / constants.CONVERSION_MASK_16BIT_FLOAT) *
+                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180) * -1)
+            # upside-down
+            gyro.z = ((data[2] / constants.CONVERSION_MASK_16BIT_FLOAT) *
+                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180) * -1)
+
             # fetch all accel values - return in m/s²
             accel = Vector3()
-            accel.x = data[4] * constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT * constants.ACCEL_RANGE_4G_FLOAT # swap x and y
-            accel.y = data[3] * constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT * constants.ACCEL_RANGE_4G_FLOAT # swap x and y
-            accel.z = data[5] * constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT * constants.ACCEL_RANGE_4G_FLOAT * -1 # upside-down
-            
+            # swap x and y
+            accel.x = (data[4] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
+                       constants.ACCEL_RANGE_4G_FLOAT * -1)
+            # swap x and y
+            accel.y = (data[3] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
+                       constants.ACCEL_RANGE_4G_FLOAT * -1)
+            # upside-down
+            accel.z = (data[5] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
+                       constants.ACCEL_RANGE_4G_FLOAT * -1)
+
             imu_msg.angular_velocity = gyro
-            imu_msg.angular_velocity_covariance = constants.EMPTY_ARRAY_9
+            imu_msg.angular_velocity_covariance = constants.COVAR_ARRAY_9
+
             imu_msg.linear_acceleration = accel
-            imu_msg.linear_acceleration_covariance = constants.EMPTY_ARRAY_9
-            
+            imu_msg.linear_acceleration_covariance = constants.COVAR_ARRAY_9
+
             imu_msg.orientation_covariance = constants.EMPTY_ARRAY_9
             imu_msg.orientation_covariance[0] = -1.0
-            
+
             # add header
             imu_msg.header.stamp = self.get_clock().now().to_msg()
+            imu_msg.header.frame_id = 'base_link'
 
             self.get_logger().debug('gz: {:+.0f}'.format(gyro.z))
 
@@ -176,7 +190,7 @@ class IMUNode(Node):
 
 
 def main(args=None):
-    
+
     try:
         rclpy.init(args=args)
         with IMUNode() as imu_node:
@@ -187,7 +201,7 @@ def main(args=None):
         # when the garbage collector destroys the node object)
         imu_node.destroy_node()
     except KeyboardInterrupt:
-        pass    
+        pass
     rclpy.shutdown()
 
 
