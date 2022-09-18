@@ -106,6 +106,10 @@ class IMUNode(Node):
             # on bus {constants.I2C_BUS_ID}")
             self.sensor = Driver(self._address, self._bus_id)  # Depends on changes to library
 
+            # configure sampling rate and filter
+            self.sensor.set_accel_rate(6)   # 100Hz
+            self.sensor.setAccelDLPFMode(0)
+
             # Defining the Range for Accelerometer and Gyroscope
             self.sensor.setFullScaleAccelRange(definitions.ACCEL_RANGE_4G, constants.ACCEL_RANGE_4G_FLOAT)
             self.sensor.setFullScaleGyroRange(definitions.GYRO_RANGE_250, constants.GYRO_RANGE_250_FLOAT)
@@ -121,7 +125,7 @@ class IMUNode(Node):
             # Enable standing still check
             if self._zero_motion:
                 self.sensor.setZeroMotionDetectionDuration(1)
-                self.sensor.setZeroMotionDetectionThreshold(0x04)
+                self.sensor.setZeroMotionDetectionThreshold(0x02)
                 self.sensor.setIntZeroMotionEnabled(True)
 
         except Exception as ex:
@@ -188,25 +192,25 @@ class IMUNode(Node):
             gyro = Vector3()
             # swap x and y
             gyro.x = ((data[1] / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180))
+                      self.sensor.gyro_range * (math.pi / 180))
             # swap x and y
             gyro.y = ((data[0] / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180))
+                      self.sensor.gyro_range * (math.pi / 180))
             # upside-down
             gyro.z = ((data[2] / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                      constants.GYRO_RANGE_250_FLOAT * (math.pi / 180) * -1.0)
+                      self.sensor.gyro_range * (math.pi / 180) * -1.0)
 
             # fetch all accel values - return in m/s²
             accel = Vector3()
             # swap x and y
             accel.x = (data[4] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                       constants.ACCEL_RANGE_4G_FLOAT)
+                       self.sensor.accel_range)
             # swap x and y
             accel.y = (data[3] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                       constants.ACCEL_RANGE_4G_FLOAT)
+                       self.sensor.accel_range)
             # upside-down
             accel.z = (data[5] * (constants.GRAVITY_CONSTANT / constants.CONVERSION_MASK_16BIT_FLOAT) *
-                       constants.ACCEL_RANGE_4G_FLOAT * -1.0)
+                       self.sensor.accel_range * -1.0)
 
             imu_msg.angular_velocity = gyro
             imu_msg.angular_velocity_covariance = constants.COVAR_ARRAY_9
