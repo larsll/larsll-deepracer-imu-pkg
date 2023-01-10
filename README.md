@@ -48,20 +48,20 @@ Open a terminal on the AWS DeepRacer device and run the following commands as th
 
 1. Clone the `imu_pkg` on the AWS DeepRacer device:
 
-        git clone https://github.com/larsll/aws-deepracer-imu-pkg.git
+        git clone https://github.com/larsll/larsll-deepracer-imu-pkg.git
 
 1. Fetch unreleased dependencies:
 
-        cd ~/deepracer_ws/aws-deepracer-imu-pkg
+        cd ~/deepracer_ws/larsll-deepracer-imu-pkg
         rosws update
 
 1. Resolve the `imu_pkg` dependencies:
 
-        cd ~/deepracer_ws/aws-deepracer-imu-pkg && rosdep install -i --from-path . --rosdistro foxy -y
+        cd ~/deepracer_ws/larsll-deepracer-imu-pkg && rosdep install -i --from-path . --rosdistro foxy -y
 
 1. Build the `imu_pkg`:
 
-        cd ~/deepracer_ws/aws-deepracer-imu-pkg && colcon build --packages-select imu_pkg
+        cd ~/deepracer_ws/larsll-deepracer-imu-pkg && colcon build --packages-select imu_pkg
 
 ## Usage
 
@@ -81,7 +81,7 @@ To launch the built `imu_node` as the root user on the AWS DeepRacer device, ope
 
 1. Source the setup script for the installed packages:
 
-        source ~/deepracer_ws/aws-deepracer-imu-pkg/install/setup.bash
+        source ~/deepracer_ws/larsll-deepracer-imu-pkg/install/setup.bash
 
 1. Launch the `imu_node` using the launch script:
 
